@@ -58,6 +58,8 @@ uint64_t _micro = 0;
 uint16_t dataOut = 0;
 uint8_t DACConfig = 0b0011;
 
+uint8_t Mode = 0; //0 = SawTooth, 1 = SineWave, 2 = SquareWave
+
 char TxDataBuffer[32] = { 0 };
 char RxDataBuffer[32] = { 0 };
 
@@ -73,6 +75,18 @@ enum STATE_MACHINE
 	State_SquareWave_WaitInput = 60
 };
 uint8_t State = 0;
+
+float SineWave_frequency = 5.0;
+char SineWave_frequency_output[32] = {0};
+
+float X = 0.0;
+
+//Generate Sine wave
+float Amplitude = 5.0;
+float Frequency = 1.0;
+float Phase_Shift = 1.0;
+float Vertical_Shift = 2047.5;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -144,6 +158,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+	SineWave_frequency = 5.0;
 	while (1)
 	{
 		//Receivedcahr
@@ -205,8 +220,9 @@ int main(void)
 				}
 				break;
 			case State_SawTooth:
+				Mode = 0;
 				{
-					char State_SawTooth_char[] = "------------------------\r\nSaw tooth  control\r\n-->Press 'a' for increase frequency (+0.1 Hz).\r\n-->Press 's' decrease frequency (-0.1 Hz).\r\n-->Press 'x' for back to Start.\r\n------------------------\r\n";
+					char State_SawTooth_char[] = "------------------------\r\nSaw tooth  control\r\n-->Press 'a' for increase frequency (+0.1 Hz).\r\n-->Press 'd' decrease frequency (-0.1 Hz).\r\n-->Press 'x' for back to Start.\r\n------------------------\r\n";
 					HAL_UART_Transmit(&huart2, (uint8_t*)State_SawTooth_char, strlen(State_SawTooth_char), 100);
 				}
 				State = State_SawTooth_WaitInput;
@@ -235,9 +251,14 @@ int main(void)
 				}
 				break;
 			case State_SineWave:
+				Mode = 1;
 				{
-					char State_SineWave_char[] = "------------------------\r\nSine wave control\r\n-->Press 'a' for increase frequency (+0.1 Hz).\r\n-->Press 's' decrease frequency (-0.1 Hz).\r\n-->Press 'x' for back to Start.\r\n------------------------\r\n";
+					char State_SineWave_char[] = "------------------------\r\nSine wave control\r\n-->Press 'a' for increase frequency (+0.1 Hz).\r\n-->Press 'd' decrease frequency (-0.1 Hz).\r\n-->Press 'x' for back to Start.\r\n------------------------\r\n";
 					HAL_UART_Transmit(&huart2, (uint8_t*)State_SineWave_char, strlen(State_SineWave_char), 100);
+				}
+				{
+					sprintf(SineWave_frequency_output, "Frequency: [%.1f]\r\n", SineWave_frequency);
+					HAL_UART_Transmit(&huart2, (uint8_t*)SineWave_frequency_output, strlen(SineWave_frequency_output), 100);
 				}
 				State = State_SineWave_WaitInput;
 				break;
@@ -247,6 +268,28 @@ int main(void)
 					case 0: //No input. Wait for input
 						break;
 					case -1: //No input. Wait for input
+						break;
+					case 'a':
+						if(SineWave_frequency >= 10.000000)
+						{
+							SineWave_frequency += 0.0;
+						}
+						else
+						{
+							SineWave_frequency += 0.1;
+						}
+						State = State_SineWave;
+						break;
+					case 'd':
+						if(SineWave_frequency == 0.000000 || SineWave_frequency <= 0.010000)
+						{
+							SineWave_frequency -= 0.0;
+						}
+						else
+						{
+							SineWave_frequency -= 0.1;
+						}
+						State = State_SineWave;
 						break;
 					case 'x':
 						{
@@ -265,8 +308,9 @@ int main(void)
 				}
 				break;
 			case State_SquareWave:
+				Mode = 2;
 				{
-					char State_SquareWave_char[] = "------------------------\r\nSquare wave control\r\n-->Press 'a' for increase frequency (+0.1 Hz).\r\n-->Press 's' decrease frequency (-0.1 Hz).\r\n-->Press 'x' for back to Start.\r\n------------------------\r\n";
+					char State_SquareWave_char[] = "------------------------\r\nSquare wave control\r\n-->Press 'a' for increase frequency (+0.1 Hz).\r\n-->Press 'd' decrease frequency (-0.1 Hz).\r\n-->Press 'x' for back to Start.\r\n------------------------\r\n";
 					HAL_UART_Transmit(&huart2, (uint8_t*)State_SquareWave_char, strlen(State_SquareWave_char), 100);
 				}
 				State = State_SquareWave_WaitInput;
@@ -307,8 +351,20 @@ int main(void)
 		if (micros() - timestamp > 100) //100 us = 10kHz
 		{
 			timestamp = micros();
-			dataOut++;
-			dataOut %= 4096;
+			if(Mode == 0) //SawTooth
+			{
+				dataOut++;
+				dataOut %= 4096;
+			}
+			else if(Mode == 1) //SineWave
+			{
+				X++;
+				dataOut = Amplitude*sin((2*M_PI*Frequency)*(X+Phase_Shift))+Vertical_Shift;
+			}
+			else if(Mode == 2) //SquareWave
+			{
+
+			}
 			if (hspi3.State == HAL_SPI_STATE_READY && HAL_GPIO_ReadPin(SPI_SS_GPIO_Port, SPI_SS_Pin) == GPIO_PIN_SET)
 			{
 				MCP4922SetOutput(DACConfig, dataOut);
