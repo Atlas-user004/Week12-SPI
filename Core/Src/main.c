@@ -94,6 +94,15 @@ float Amplitude_SineWave = 1.0;
 float Frequency_SineWave = 5.0;
 float Phase_Shift_SineWave = 0.0;
 float Vertical_Shift_SineWave = 1.65;
+//Generate Square wave
+char SquareWave_frequency_output[40] = {0};
+char SquareWave_Vhigh_output[32] = {0};
+char SquareWave_Vlow_output[32] = {0};
+char SquareWave_dutycycle_output[40] = {0};
+float Frequency_SquareWave = 5.0;
+float Vhigh_SquareWave = 4096.0;
+float Vlow_SquareWave = 0.0;
+float DutyCycle = 0.0;
 
 /* USER CODE END PV */
 
@@ -159,7 +168,7 @@ int main(void)
 	HAL_GPIO_WritePin(LOAD_GPIO_Port, LOAD_Pin, GPIO_PIN_RESET);
 
 	{
-		char temp[]="\r\n\r\nWelcome\r\nPlease type something to start.\r\n";
+		char temp[]="\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\nWelcome\r\nPlease type something to start.\r\n";
 		HAL_UART_Transmit(&huart2, (uint8_t*)temp, strlen(temp),10);
 	}
   /* USER CODE END 2 */
@@ -238,8 +247,8 @@ int main(void)
 							"-->Press 'a' decrease frequency (-0.1 Hz).\r\n"
 							"-->Press 'w' increase V high (+0.1 V).\r\n"
 							"-->Press 's' decrease V high (-0.1 V).\r\n"
-							"-->Press 'e' increase V high (+0.1 V).\r\n"
-							"-->Press 'q' decrease V high (-0.1 V).\r\n"
+							"-->Press 'e' increase V low (+0.1 V).\r\n"
+							"-->Press 'q' decrease V low (-0.1 V).\r\n"
 							"-->Press 'f' for change slope.\r\n"
 							"-->Press 'x' for back to Start.\r\n"
 							"------------------------\r\n";
@@ -359,8 +368,8 @@ int main(void)
 							"Sine wave control\r\n"
 							"-->Press 'd' for increase frequency (+0.1 Hz).\r\n"
 							"-->Press 'a' decrease frequency (-0.1 Hz).\r\n"
-							"-->Press 'w' increase amplitude (+0.1 V).\r\n"
-							"-->Press 's' decrease amplitude (-0.1 V).\r\n"
+							"-->Press 'w' increase Vhigh (+0.1 V).\r\n"
+							"-->Press 's' decrease Vlow (-0.1 V).\r\n"
 							"-->Press 'x' for back to Start.\r\n"
 							"------------------------\r\n";
 					HAL_UART_Transmit(&huart2, (uint8_t*)State_SineWave_char, strlen(State_SineWave_char), 100);
@@ -448,10 +457,32 @@ int main(void)
 					char State_SquareWave_char[] = "------------------------\r\n"
 							"Square wave control\r\n"
 							"-->Press 'd' for increase frequency (+0.1 Hz).\r\n"
-							"-->Press 'a' decrease frequency (-0.1 Hz).\r\n"
+							"-->Press 'a' for decrease frequency (-0.1 Hz).\r\n"
+							"-->Press 'w' increase V high (+0.1 V).\r\n"
+							"-->Press 's' decrease V high (-0.1 V).\r\n"
+							"-->Press 'e' increase V low (+0.1 V).\r\n"
+							"-->Press 'q' decrease V low (-0.1 V).\r\n"
+							"-->Press 'v' increase Duty cycle (+0.1%).\r\n"
+							"-->Press 'c' decrease Duty cycle (-0.1%).\r\n"
 							"-->Press 'x' for back to Start.\r\n"
 							"------------------------\r\n";
 					HAL_UART_Transmit(&huart2, (uint8_t*)State_SquareWave_char, strlen(State_SquareWave_char), 100);
+				}
+				{
+					sprintf(SquareWave_frequency_output, "Frequency of SquareWave: [%.1f]\r\n", Frequency_SquareWave);
+					HAL_UART_Transmit(&huart2, (uint8_t*)SquareWave_frequency_output, strlen(SquareWave_frequency_output), 100);
+				}
+				{
+					sprintf(SquareWave_Vhigh_output, "V high of SquareWave: [%.1f]\r\n", Vhigh_SquareWave);
+					HAL_UART_Transmit(&huart2, (uint8_t*)SquareWave_Vhigh_output, strlen(SquareWave_Vhigh_output), 100);
+				}
+				{
+					sprintf(SquareWave_Vlow_output, "V low of SquareWave: [%.1f]\r\n", Vlow_SquareWave);
+					HAL_UART_Transmit(&huart2, (uint8_t*)SquareWave_Vlow_output, strlen(SquareWave_Vlow_output), 100);
+				}
+				{
+					sprintf(SquareWave_dutycycle_output, "Duty cycle of SquareWave: [%.1f]\r\n", DutyCycle);
+					HAL_UART_Transmit(&huart2, (uint8_t*)SquareWave_dutycycle_output, strlen(SquareWave_dutycycle_output), 100);
 				}
 				State = State_SquareWave_WaitInput;
 				break;
@@ -461,6 +492,94 @@ int main(void)
 					case 0: //No input. Wait for input
 						break;
 					case -1: //No input. Wait for input
+						break;
+					case 'd':
+						if(Frequency_SquareWave >= 10.000000)
+						{
+							Frequency_SquareWave = 10.0;
+						}
+						else
+						{
+							Frequency_SquareWave += 0.1;
+						}
+						State = State_SquareWave;
+						break;
+					case 'a':
+						if(Frequency_SquareWave <= 0.090000)
+						{
+							Frequency_SquareWave = 0.0;
+						}
+						else
+						{
+							Frequency_SquareWave -= 0.1;
+						}
+						State = State_SquareWave;
+						break;
+					case 'w':
+						if(Vhigh_SquareWave >= 4096.0)
+						{
+							Vhigh_SquareWave = 4096.0;
+						}
+						else
+						{
+							Vhigh_SquareWave += 0.1;
+						}
+						State = State_SquareWave;
+						break;
+					case 's':
+						if(Vhigh_SquareWave <= 0.09)
+						{
+							Vhigh_SquareWave = 0.0;
+						}
+						else
+						{
+							Vhigh_SquareWave -= 0.1;
+						}
+						State = State_SquareWave;
+						break;
+					case 'e':
+						if(Vlow_SquareWave >= 4096.0)
+						{
+							Vlow_SquareWave = 4096.0;
+						}
+						else
+						{
+							Vlow_SquareWave += 0.1;
+						}
+						State = State_SquareWave;
+						break;
+					case 'q':
+						if(Vlow_SquareWave <= 0.09)
+						{
+							Vlow_SquareWave = 0.0;
+						}
+						else
+						{
+							Vlow_SquareWave -= 0.1;
+						}
+						State = State_SquareWave;
+						break;
+					case 'v':
+						if(DutyCycle >= 100.0)
+						{
+							DutyCycle = 100.0;
+						}
+						else
+						{
+							DutyCycle += 0.1;
+						}
+						State = State_SquareWave;
+						break;
+					case 'c':
+						if(DutyCycle <= 0.09)
+						{
+							DutyCycle = 0.0;
+						}
+						else
+						{
+							DutyCycle -= 0.1;
+						}
+						State = State_SquareWave;
 						break;
 					case 'x':
 						{
@@ -511,18 +630,14 @@ int main(void)
 						dataOut = Vhigh_SawTooth;
 					}
 				}
-				//dataOut%=4096;
-				//fmodf(dataOut,Vhigh_SawTooth);
 		}
 		//SineWave
 		else if(Mode == 1)
 		{
-			dataOut = Amplitude_SineWave*sin(Frequency_SineWave*(ADCin/4096))+0;
-//			if(micros() - timestamp > (500.0/Frequency_SawTooth))
-//			{
-//				X++;
-//				dataOut = Amplitude_SineWave*sin(X)+0;
-//			}
+			if(micros() - timestamp > (500000.0/Frequency_SawTooth))
+			{
+				dataOut = Amplitude_SineWave*sin(ADCin);
+			}
 		}
 		//SquareWave
 		else if(Mode == 2)
