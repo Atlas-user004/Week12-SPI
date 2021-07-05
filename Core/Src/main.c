@@ -92,17 +92,18 @@ float Vlow_SawTooth = 0.0;
 char SineWave_frequency_output[32] = {0};
 char SineWave_Vhigh_output[32] = {0};
 char SineWave_Vlow_output[32] = {0};
-float Frequency_SineWave = 5.0;
+float Frequency_SineWave = 1.0;
 float Vhigh_SineWave = 3.3;
 float Vlow_SineWave = 0.0;
 float Phase_Shift_SineWave = 0.0;
 float Vertical_Shift_SineWave = 1.65;
+float Degree = 0.0;
 //Generate Square wave
 char SquareWave_frequency_output[40] = {0};
 char SquareWave_Vhigh_output[32] = {0};
 char SquareWave_Vlow_output[32] = {0};
 char SquareWave_dutycycle_output[40] = {0};
-float Frequency_SquareWave = 5.0;
+float Frequency_SquareWave = 1.0;
 float Vhigh_SquareWave = 3.3;
 float Vlow_SquareWave = 0.0;
 float DutyCycle = 1.0;
@@ -691,7 +692,8 @@ int main(void)
 			//SineWave
 			else if(Mode == 1)
 			{
-
+				Degree += 0.01;
+				dataOut = (((Vhigh_SineWave*(4096.0/3.3))-(Vlow_SineWave*(4096.0/3.3)))/2)*sin(2*M_PI*Frequency_SineWave*Degree)+(((Vhigh_SineWave*(4096.0/3.3))+(Vlow_SineWave*(4096.0/3.3)))/2);
 			}
 			//SquareWave
 			else if(Mode == 2)
