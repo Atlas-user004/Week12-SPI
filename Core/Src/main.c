@@ -76,7 +76,9 @@ enum STATE_MACHINE
 };
 uint8_t State = 0;
 
-uint16_t X = 0;
+float Time_SawTooth = 0.0;
+float Time_SineWave = 0.0;
+float Time_SquareWave = 0.0;
 
 //Generate Saw tooth
 char SawTooth_frequency_output[32] = {0};
@@ -84,14 +86,15 @@ char SawTooth_Vhigh_output[32] = {0};
 char SawTooth_Vlow_output[32] = {0};
 uint16_t Slope = 1;
 float Frequency_SawTooth = 1.0;
-uint16_t TimeStamp_SawTooth = 0;
-float Vhigh_SawTooth = 4096.0;
+float Vhigh_SawTooth = 3.3;
 float Vlow_SawTooth = 0.0;
 //Generate Sine wave
 char SineWave_frequency_output[32] = {0};
-char SineWave_amplitude_output[32] = {0};
-float Amplitude_SineWave = 1.0;
+char SineWave_Vhigh_output[32] = {0};
+char SineWave_Vlow_output[32] = {0};
 float Frequency_SineWave = 5.0;
+float Vhigh_SineWave = 3.3;
+float Vlow_SineWave = 0.0;
 float Phase_Shift_SineWave = 0.0;
 float Vertical_Shift_SineWave = 1.65;
 //Generate Square wave
@@ -100,9 +103,9 @@ char SquareWave_Vhigh_output[32] = {0};
 char SquareWave_Vlow_output[32] = {0};
 char SquareWave_dutycycle_output[40] = {0};
 float Frequency_SquareWave = 5.0;
-float Vhigh_SquareWave = 4096.0;
+float Vhigh_SquareWave = 3.3;
 float Vlow_SquareWave = 0.0;
-float DutyCycle = 0.0;
+float DutyCycle = 1.0;
 
 /* USER CODE END PV */
 
@@ -302,9 +305,9 @@ int main(void)
 						State = State_SawTooth;
 						break;
 					case 'w':
-						if(Vhigh_SawTooth >= 4096.0)
+						if(Vhigh_SawTooth+0.05 >= 3.3)
 						{
-							Vhigh_SawTooth = 4096.0;
+							Vhigh_SawTooth = 3.3;
 						}
 						else
 						{
@@ -319,14 +322,21 @@ int main(void)
 						}
 						else
 						{
-							Vhigh_SawTooth -= 0.1;
+							if(Vhigh_SawTooth <= Vlow_SawTooth)
+							{
+								Vhigh_SawTooth = Vlow_SawTooth;
+							}
+							else
+							{
+								Vhigh_SawTooth -= 0.1;
+							}
 						}
 						State = State_SawTooth;
 						break;
 					case 'e':
-						if(Vlow_SawTooth >= 4096.0)
+						if(Vlow_SawTooth+0.05 >= Vhigh_SawTooth)
 						{
-							Vlow_SawTooth = 4096.0;
+							Vlow_SawTooth = Vhigh_SawTooth;
 						}
 						else
 						{
@@ -379,8 +389,12 @@ int main(void)
 					HAL_UART_Transmit(&huart2, (uint8_t*)SineWave_frequency_output, strlen(SineWave_frequency_output), 100);
 				}
 				{
-					sprintf(SineWave_amplitude_output, "Amplitude of SineWave: [%.1f]\r\n", Amplitude_SineWave);
-					HAL_UART_Transmit(&huart2, (uint8_t*)SineWave_amplitude_output, strlen(SineWave_amplitude_output), 100);
+					sprintf(SineWave_Vhigh_output, "V high of SineWave: [%.1f]\r\n", Vhigh_SineWave);
+					HAL_UART_Transmit(&huart2, (uint8_t*)SineWave_Vhigh_output, strlen(SineWave_Vhigh_output), 100);
+				}
+				{
+					sprintf(SineWave_Vlow_output, "V low of SineWave: [%.1f]\r\n", Vlow_SineWave);
+					HAL_UART_Transmit(&huart2, (uint8_t*)SineWave_Vlow_output, strlen(SineWave_Vlow_output), 100);
 				}
 				State = State_SineWave_WaitInput;
 				break;
@@ -414,24 +428,53 @@ int main(void)
 						State = State_SineWave;
 						break;
 					case 'w':
-						if(Amplitude_SineWave >= 1.5)
+						if(Vhigh_SineWave+0.05 >= 3.3)
 						{
-							Amplitude_SineWave = 1.550000;
+							Vhigh_SineWave = 3.3;
 						}
 						else
 						{
-							Amplitude_SineWave += 0.1;
+							Vhigh_SineWave += 0.1;
 						}
 						State = State_SineWave;
 						break;
 					case 's':
-						if(Amplitude_SineWave <= 0.090000)
+						if(Vhigh_SineWave <= 0.09)
 						{
-							Amplitude_SineWave = 0.0;
+							Vhigh_SineWave = 0.0;
 						}
 						else
 						{
-							Amplitude_SineWave -= 0.1;
+							if(Vhigh_SineWave <= Vlow_SineWave)
+							{
+								Vhigh_SineWave = Vlow_SineWave;
+							}
+							else
+							{
+								Vhigh_SineWave -= 0.1;
+							}
+						}
+						State = State_SineWave;
+						break;
+					case 'e':
+						if(Vlow_SineWave+0.05 >= Vhigh_SineWave)
+						{
+							Vlow_SineWave = Vhigh_SineWave;
+						}
+						else
+						{
+							Vlow_SineWave += 0.1;
+						}
+						State = State_SineWave;
+						break;
+					case 'q':
+						if(Vlow_SineWave <= 0.09)
+						{
+							Vlow_SineWave = 0.0;
+						}
+						else
+						{
+							Vlow_SineWave -= 0.1;
 						}
 						State = State_SineWave;
 						break;
@@ -516,9 +559,9 @@ int main(void)
 						State = State_SquareWave;
 						break;
 					case 'w':
-						if(Vhigh_SquareWave >= 4096.0)
+						if(Vhigh_SquareWave+0.05 >= 3.3)
 						{
-							Vhigh_SquareWave = 4096.0;
+							Vhigh_SquareWave = 3.3;
 						}
 						else
 						{
@@ -533,14 +576,21 @@ int main(void)
 						}
 						else
 						{
-							Vhigh_SquareWave -= 0.1;
+							if(Vhigh_SquareWave <= Vlow_SquareWave)
+							{
+								Vhigh_SquareWave = Vlow_SquareWave;
+							}
+							else
+							{
+								Vhigh_SquareWave -= 0.1;
+							}
 						}
 						State = State_SquareWave;
 						break;
 					case 'e':
-						if(Vlow_SquareWave >= 4096.0)
+						if(Vlow_SquareWave+0.05 >= Vhigh_SquareWave)
 						{
-							Vlow_SquareWave = 4096.0;
+							Vlow_SquareWave = Vhigh_SquareWave;
 						}
 						else
 						{
@@ -560,13 +610,13 @@ int main(void)
 						State = State_SquareWave;
 						break;
 					case 'v':
-						if(DutyCycle >= 100.0)
+						if(DutyCycle+5.0 >= 100.0)
 						{
 							DutyCycle = 100.0;
 						}
 						else
 						{
-							DutyCycle += 0.1;
+							DutyCycle += 10.0;
 						}
 						State = State_SquareWave;
 						break;
@@ -577,7 +627,7 @@ int main(void)
 						}
 						else
 						{
-							DutyCycle -= 0.1;
+							DutyCycle -= 10.0;
 						}
 						State = State_SquareWave;
 						break;
@@ -608,53 +658,59 @@ int main(void)
 
 		//SPL
 		static uint64_t timestamp = 0;
-		//SawTooth
-		if(Mode == 0)
+		if (micros() - timestamp > 10000) //100 us --> 10kHz
 		{
-			if (micros() - timestamp > (500.0/Frequency_SawTooth)) //from (micros() - timestamp > 100) 100 us = 10kHz. Now I use (500.0/Frequency_SawTooth) to make +0.1 or -0.1 Hz.
+			timestamp = micros();
+			//SawTooth
+			if(Mode == 0)
 			{
-				timestamp = micros();
+				Time_SawTooth += 0.01;
 				if(Slope == 1)
 				{
-					dataOut++;
-					if(dataOut >= Vhigh_SawTooth)
+					if(Time_SawTooth <= (1/Frequency_SawTooth))
 					{
-						dataOut = Vlow_SawTooth;
+						dataOut = (((Vhigh_SawTooth*(4096.0/3.3))-(Vlow_SawTooth*(4096.0/3.3)))/(1/Frequency_SawTooth))*Time_SawTooth + (Vlow_SawTooth*(4096.0/3.3));
+					}
+					else
+					{
+						Time_SawTooth = 0;
 					}
 				}
 				else
 				{
-					dataOut--;
-					if(dataOut <= Vlow_SawTooth)
+					if(Time_SawTooth <= (1/Frequency_SawTooth))
 					{
-						dataOut = Vhigh_SawTooth;
+						dataOut = (((Vlow_SawTooth*(4096.0/3.3))-(Vhigh_SawTooth*(4096.0/3.3)))/(1/Frequency_SawTooth))*Time_SawTooth + (Vhigh_SawTooth*(4096.0/3.3));
+					}
+					else
+					{
+						Time_SawTooth = 0;
 					}
 				}
-		}
-		//SineWave
-		else if(Mode == 1)
-		{
-			if(micros() - timestamp > (500000.0/Frequency_SawTooth))
+			}
+			//SineWave
+			else if(Mode == 1)
 			{
-				dataOut = Amplitude_SineWave*sin(ADCin);
+
+			}
+			//SquareWave
+			else if(Mode == 2)
+			{
+
+			}
+			if (hspi3.State == HAL_SPI_STATE_READY && HAL_GPIO_ReadPin(SPI_SS_GPIO_Port, SPI_SS_Pin) == GPIO_PIN_SET)
+			{
+				MCP4922SetOutput(DACConfig, dataOut);
 			}
 		}
-		//SquareWave
-		else if(Mode == 2)
-		{
 
-		}
-		if (hspi3.State == HAL_SPI_STATE_READY && HAL_GPIO_ReadPin(SPI_SS_GPIO_Port, SPI_SS_Pin) == GPIO_PIN_SET)
-		{
-			MCP4922SetOutput(DACConfig, dataOut);
-		}
 	}
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
 	}
   /* USER CODE END 3 */
-}
+
 
 /**
   * @brief System Clock Configuration
