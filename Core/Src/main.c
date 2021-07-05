@@ -77,7 +77,6 @@ enum STATE_MACHINE
 uint8_t State = 0;
 
 float Time_SawTooth = 0.0;
-float Time_SineWave = 0.0;
 float Time_SquareWave = 0.0;
 
 //Generate Saw tooth
@@ -106,7 +105,8 @@ char SquareWave_dutycycle_output[40] = {0};
 float Frequency_SquareWave = 1.0;
 float Vhigh_SquareWave = 3.3;
 float Vlow_SquareWave = 0.0;
-float DutyCycle = 1.0;
+float Period_High_SquareWave = 0.0;
+float DutyCycle = 50.0;
 
 /* USER CODE END PV */
 
@@ -674,7 +674,7 @@ int main(void)
 					}
 					else
 					{
-						Time_SawTooth = 0;
+						Time_SawTooth = 0.0;
 					}
 				}
 				else
@@ -685,7 +685,7 @@ int main(void)
 					}
 					else
 					{
-						Time_SawTooth = 0;
+						Time_SawTooth = 0.0;
 					}
 				}
 			}
@@ -698,7 +698,20 @@ int main(void)
 			//SquareWave
 			else if(Mode == 2)
 			{
-
+				Time_SquareWave += 0.01;
+				Period_High_SquareWave = (1/Frequency_SquareWave)*(DutyCycle/100.0);
+				if(Time_SquareWave <= Period_High_SquareWave)
+				{
+					dataOut = Vhigh_SquareWave*(4096.0/3.3);
+				}
+				else if(Time_SquareWave > Period_High_SquareWave && Time_SquareWave <= (1/Frequency_SquareWave))
+				{
+					dataOut = Vlow_SquareWave*(4096.0/3.3);
+				}
+				else
+				{
+					Time_SquareWave = 0.0;
+				}
 			}
 			if (hspi3.State == HAL_SPI_STATE_READY && HAL_GPIO_ReadPin(SPI_SS_GPIO_Port, SPI_SS_Pin) == GPIO_PIN_SET)
 			{
