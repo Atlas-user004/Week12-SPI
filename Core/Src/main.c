@@ -76,22 +76,24 @@ enum STATE_MACHINE
 };
 uint8_t State = 0;
 
-float X = 0.0;
+uint16_t X = 0;
 
 //Generate Saw tooth
 char SawTooth_frequency_output[32] = {0};
 char SawTooth_Vhigh_output[32] = {0};
+char SawTooth_Vlow_output[32] = {0};
 uint16_t Slope = 1;
-float Frequency_SawTooth = 5.0;
+float Frequency_SawTooth = 1.0;
 uint16_t TimeStamp_SawTooth = 0;
 float Vhigh_SawTooth = 4096.0;
+float Vlow_SawTooth = 0.0;
 //Generate Sine wave
 char SineWave_frequency_output[32] = {0};
 char SineWave_amplitude_output[32] = {0};
 float Amplitude_SineWave = 1.0;
 float Frequency_SineWave = 5.0;
 float Phase_Shift_SineWave = 0.0;
-float Vertical_Shift_SineWave = 2047.5;
+float Vertical_Shift_SineWave = 1.65;
 
 /* USER CODE END PV */
 
@@ -182,7 +184,11 @@ int main(void)
 		{
 			case State_Start:
 				{
-					char State_Start_char[] = "----------MENU----------\r\n-->Press '0' for Saw tooth.\r\n-->Press '1' for Sine wave.\r\n-->Press '2' for Square wave.\r\n------------------------\r\n";
+					char State_Start_char[] = "----------MENU----------\r\n"
+							"-->Press '0' for Saw tooth.\r\n"
+							"-->Press '1' for Sine wave.\r\n"
+							"-->Press '2' for Square wave.\r\n"
+							"------------------------\r\n";
 					HAL_UART_Transmit(&huart2, (uint8_t*)State_Start_char, strlen(State_Start_char), 100);
 				}
 				State = State_Start_WaitInput;
@@ -227,7 +233,16 @@ int main(void)
 			case State_SawTooth:
 				Mode = 0;
 				{
-					char State_SawTooth_char[] = "------------------------\r\nSaw tooth  control\r\n-->Press 'a' for increase frequency (+0.1 Hz).\r\n-->Press 'd' decrease frequency (-0.1 Hz).\r\n-->Press 'w' increase V high (+0.1 V).\r\n-->Press 's' decrease V high (-0.1 V).\r\n-->Press 'f' for change slope.\r\n-->Press 'x' for back to Start.\r\n------------------------\r\n";
+					char State_SawTooth_char[] = "------------------------\r\nSaw tooth  control\r\n"
+							"-->Press 'd' for increase frequency (+0.1 Hz).\r\n"
+							"-->Press 'a' decrease frequency (-0.1 Hz).\r\n"
+							"-->Press 'w' increase V high (+0.1 V).\r\n"
+							"-->Press 's' decrease V high (-0.1 V).\r\n"
+							"-->Press 'e' increase V high (+0.1 V).\r\n"
+							"-->Press 'q' decrease V high (-0.1 V).\r\n"
+							"-->Press 'f' for change slope.\r\n"
+							"-->Press 'x' for back to Start.\r\n"
+							"------------------------\r\n";
 					HAL_UART_Transmit(&huart2, (uint8_t*)State_SawTooth_char, strlen(State_SawTooth_char), 100);
 				}
 				{
@@ -237,6 +252,10 @@ int main(void)
 				{
 					sprintf(SawTooth_Vhigh_output, "V high of SawTooth: [%.1f]\r\n", Vhigh_SawTooth);
 					HAL_UART_Transmit(&huart2, (uint8_t*)SawTooth_Vhigh_output, strlen(SawTooth_Vhigh_output), 100);
+				}
+				{
+					sprintf(SawTooth_Vlow_output, "V low of SawTooth: [%.1f]\r\n", Vlow_SawTooth);
+					HAL_UART_Transmit(&huart2, (uint8_t*)SawTooth_Vlow_output, strlen(SawTooth_Vlow_output), 100);
 				}
 				State = State_SawTooth_WaitInput;
 				break;
@@ -251,7 +270,7 @@ int main(void)
 						Slope = -1*Slope;
 						State = State_SawTooth;
 						break;
-					case 'a':
+					case 'd':
 						if(Frequency_SawTooth >= 10.000000)
 						{
 							Frequency_SawTooth = 10.0;
@@ -262,7 +281,7 @@ int main(void)
 						}
 						State = State_SawTooth;
 						break;
-					case 'd':
+					case 'a':
 						if(Frequency_SawTooth <= 0.090000)
 						{
 							Frequency_SawTooth = 0.0;
@@ -295,6 +314,28 @@ int main(void)
 						}
 						State = State_SawTooth;
 						break;
+					case 'e':
+						if(Vlow_SawTooth >= 4096.0)
+						{
+							Vlow_SawTooth = 4096.0;
+						}
+						else
+						{
+							Vlow_SawTooth += 0.1;
+						}
+						State = State_SawTooth;
+						break;
+					case 'q':
+						if(Vlow_SawTooth <= 0.09)
+						{
+							Vlow_SawTooth = 0.0;
+						}
+						else
+						{
+							Vlow_SawTooth -= 0.1;
+						}
+						State = State_SawTooth;
+						break;
 					case 'x':
 						{
 							char GoBack[] = " \r\nGo to Menu.\r\nPlease wait....\r\n \r\n";
@@ -314,7 +355,14 @@ int main(void)
 			case State_SineWave:
 				Mode = 1;
 				{
-					char State_SineWave_char[] = "------------------------\r\nSine wave control\r\n-->Press 'a' for increase frequency (+0.1 Hz).\r\n-->Press 'd' decrease frequency (-0.1 Hz).\r\n-->Press 'w' increase amplitude (+0.1 V).\r\n-->Press 's' decrease amplitude (-0.1 V).\r\n-->Press 'x' for back to Start.\r\n------------------------\r\n";
+					char State_SineWave_char[] = "------------------------\r\n"
+							"Sine wave control\r\n"
+							"-->Press 'd' for increase frequency (+0.1 Hz).\r\n"
+							"-->Press 'a' decrease frequency (-0.1 Hz).\r\n"
+							"-->Press 'w' increase amplitude (+0.1 V).\r\n"
+							"-->Press 's' decrease amplitude (-0.1 V).\r\n"
+							"-->Press 'x' for back to Start.\r\n"
+							"------------------------\r\n";
 					HAL_UART_Transmit(&huart2, (uint8_t*)State_SineWave_char, strlen(State_SineWave_char), 100);
 				}
 				{
@@ -334,7 +382,7 @@ int main(void)
 						break;
 					case -1: //No input. Wait for input
 						break;
-					case 'a':
+					case 'd':
 						if(Frequency_SineWave >= 10.000000)
 						{
 							Frequency_SineWave = 10.0;
@@ -345,7 +393,7 @@ int main(void)
 						}
 						State = State_SineWave;
 						break;
-					case 'd':
+					case 'a':
 						if(Frequency_SineWave <= 0.090000)
 						{
 							Frequency_SineWave = 0.0;
@@ -397,7 +445,12 @@ int main(void)
 			case State_SquareWave:
 				Mode = 2;
 				{
-					char State_SquareWave_char[] = "------------------------\r\nSquare wave control\r\n-->Press 'a' for increase frequency (+0.1 Hz).\r\n-->Press 'd' decrease frequency (-0.1 Hz).\r\n-->Press 'x' for back to Start.\r\n------------------------\r\n";
+					char State_SquareWave_char[] = "------------------------\r\n"
+							"Square wave control\r\n"
+							"-->Press 'd' for increase frequency (+0.1 Hz).\r\n"
+							"-->Press 'a' decrease frequency (-0.1 Hz).\r\n"
+							"-->Press 'x' for back to Start.\r\n"
+							"------------------------\r\n";
 					HAL_UART_Transmit(&huart2, (uint8_t*)State_SquareWave_char, strlen(State_SquareWave_char), 100);
 				}
 				State = State_SquareWave_WaitInput;
@@ -445,18 +498,31 @@ int main(void)
 				if(Slope == 1)
 				{
 					dataOut++;
+					if(dataOut >= Vhigh_SawTooth)
+					{
+						dataOut = Vlow_SawTooth;
+					}
 				}
 				else
 				{
 					dataOut--;
+					if(dataOut <= Vlow_SawTooth)
+					{
+						dataOut = Vhigh_SawTooth;
+					}
 				}
-				fmodf(dataOut,Vhigh_SawTooth);
+				//dataOut%=4096;
+				//fmodf(dataOut,Vhigh_SawTooth);
 		}
 		//SineWave
 		else if(Mode == 1)
 		{
-			X++;
-			dataOut = Amplitude_SineWave*sin(Frequency_SineWave*(ADCin/4095))+Vertical_Shift_SineWave;
+			dataOut = Amplitude_SineWave*sin(Frequency_SineWave*(ADCin/4096))+0;
+//			if(micros() - timestamp > (500.0/Frequency_SawTooth))
+//			{
+//				X++;
+//				dataOut = Amplitude_SineWave*sin(X)+0;
+//			}
 		}
 		//SquareWave
 		else if(Mode == 2)
