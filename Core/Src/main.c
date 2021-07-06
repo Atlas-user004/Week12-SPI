@@ -53,10 +53,10 @@ TIM_HandleTypeDef htim11;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-uint16_t ADCin = 0;
+uint16_t ADCin = 0; // Feedback
 uint64_t _micro = 0;
-uint16_t dataOut = 0;
-uint8_t DACConfig = 0b0011;
+uint16_t dataOut = 0; // 12bit DAC
+uint8_t DACConfig = 0b0011; // Upper 4bit DAC
 
 uint8_t Mode = 0; //0 = SawTooth, 1 = SineWave, 2 = SquareWave
 
@@ -284,7 +284,7 @@ int main(void)
 						State = State_SawTooth;
 						break;
 					case 'd':
-						if(Frequency_SawTooth >= 10.000000)
+						if(Frequency_SawTooth+0.05 >= 10.000000)
 						{
 							Frequency_SawTooth = 10.0;
 						}
@@ -295,7 +295,7 @@ int main(void)
 						State = State_SawTooth;
 						break;
 					case 'a':
-						if(Frequency_SawTooth <= 0.090000)
+						if(Frequency_SawTooth < 0.1)
 						{
 							Frequency_SawTooth = 0.0;
 						}
@@ -317,7 +317,7 @@ int main(void)
 						State = State_SawTooth;
 						break;
 					case 's':
-						if(Vhigh_SawTooth <= 0.09)
+						if(Vhigh_SawTooth < 0.1)
 						{
 							Vhigh_SawTooth = 0.0;
 						}
@@ -346,7 +346,7 @@ int main(void)
 						State = State_SawTooth;
 						break;
 					case 'q':
-						if(Vlow_SawTooth <= 0.09)
+						if(Vlow_SawTooth < 0.1)
 						{
 							Vlow_SawTooth = 0.0;
 						}
@@ -407,7 +407,7 @@ int main(void)
 					case -1: //No input. Wait for input
 						break;
 					case 'd':
-						if(Frequency_SineWave >= 10.000000)
+						if(Frequency_SineWave+0.05 >= 10.000000)
 						{
 							Frequency_SineWave = 10.0;
 						}
@@ -418,7 +418,7 @@ int main(void)
 						State = State_SineWave;
 						break;
 					case 'a':
-						if(Frequency_SineWave <= 0.090000)
+						if(Frequency_SineWave < 0.1)
 						{
 							Frequency_SineWave = 0.0;
 						}
@@ -440,7 +440,7 @@ int main(void)
 						State = State_SineWave;
 						break;
 					case 's':
-						if(Vhigh_SineWave <= 0.09)
+						if(Vhigh_SineWave < 0.1)
 						{
 							Vhigh_SineWave = 0.0;
 						}
@@ -469,7 +469,7 @@ int main(void)
 						State = State_SineWave;
 						break;
 					case 'q':
-						if(Vlow_SineWave <= 0.09)
+						if(Vlow_SineWave < 0.1)
 						{
 							Vlow_SineWave = 0.0;
 						}
@@ -538,7 +538,7 @@ int main(void)
 					case -1: //No input. Wait for input
 						break;
 					case 'd':
-						if(Frequency_SquareWave >= 10.000000)
+						if(Frequency_SquareWave+0.05 >= 10.000000)
 						{
 							Frequency_SquareWave = 10.0;
 						}
@@ -549,7 +549,7 @@ int main(void)
 						State = State_SquareWave;
 						break;
 					case 'a':
-						if(Frequency_SquareWave <= 0.090000)
+						if(Frequency_SquareWave < 0.1)
 						{
 							Frequency_SquareWave = 0.0;
 						}
@@ -571,7 +571,7 @@ int main(void)
 						State = State_SquareWave;
 						break;
 					case 's':
-						if(Vhigh_SquareWave <= 0.09)
+						if(Vhigh_SquareWave < 0.1)
 						{
 							Vhigh_SquareWave = 0.0;
 						}
@@ -600,7 +600,7 @@ int main(void)
 						State = State_SquareWave;
 						break;
 					case 'q':
-						if(Vlow_SquareWave <= 0.09)
+						if(Vlow_SquareWave < 0.1)
 						{
 							Vlow_SquareWave = 0.0;
 						}
@@ -622,7 +622,7 @@ int main(void)
 						State = State_SquareWave;
 						break;
 					case 'c':
-						if(DutyCycle <= 0.09)
+						if(DutyCycle < 10.0)
 						{
 							DutyCycle = 0.0;
 						}
@@ -659,7 +659,7 @@ int main(void)
 
 		//SPL
 		static uint64_t timestamp = 0;
-		if (micros() - timestamp > 10000) //100 us --> 10kHz
+		if (micros() - timestamp > 10000)
 		{
 			timestamp = micros();
 			//SawTooth
@@ -713,7 +713,7 @@ int main(void)
 					Time_SquareWave = 0.0;
 				}
 			}
-			if (hspi3.State == HAL_SPI_STATE_READY && HAL_GPIO_ReadPin(SPI_SS_GPIO_Port, SPI_SS_Pin) == GPIO_PIN_SET)
+			if (hspi3.State == HAL_SPI_STATE_READY && HAL_GPIO_ReadPin(SPI_SS_GPIO_Port, SPI_SS_Pin) == GPIO_PIN_SET) //if master is not communicate another slave (it has only 1 slave) and ship select is high. it will sent data.
 			{
 				MCP4922SetOutput(DACConfig, dataOut);
 			}
@@ -1041,11 +1041,12 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void MCP4922SetOutput(uint8_t Config, uint16_t DACOutput)
+void MCP4922SetOutput(uint8_t Config, uint16_t DACOutput) // Set Output // Config is upper 4 bit DAC, DACOutput is 12 bit DAC.
 {
+	//Use bitwise operation to make Config and DACOutput be one package.
 	uint32_t OutputPacket = (DACOutput & 0x0fff) | ((Config & 0xf) << 12);
-	HAL_GPIO_WritePin(SPI_SS_GPIO_Port, SPI_SS_Pin, GPIO_PIN_RESET);
-	HAL_SPI_Transmit_IT(&hspi3, &OutputPacket, 1);
+	HAL_GPIO_WritePin(SPI_SS_GPIO_Port, SPI_SS_Pin, GPIO_PIN_RESET); //ship select be low.
+	HAL_SPI_Transmit_IT(&hspi3, &OutputPacket, 1);// sent data
 }
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
